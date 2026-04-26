@@ -7,7 +7,9 @@ import com.practice.jobqueue.domain.JobStatus;
 import com.practice.jobqueue.mapping.JobMapper;
 import com.practice.jobqueue.repository.JobRepository;
 import jakarta.persistence.EntityNotFoundException;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
 import java.time.OffsetDateTime;
@@ -82,5 +84,24 @@ public class JobService {
         } else {
             return runAt;
         }
+    }
+
+    @Transactional
+    public List<Job> claimJobs(int batchSize) {
+        OffsetDateTime now = OffsetDateTime.now();
+
+        List<Job> jobs = jobRepository.findDueJobsForUpdate(
+                JobStatus.PENDING,
+                now,
+                PageRequest.of(0, batchSize)
+        );
+
+        List<Long> ids = jobs.stream()
+                .map(Job::getId)
+                .toList();
+
+        jobRepository.markJobsAsRunning(ids, JobStatus.RUNNING, now);
+
+        return jobs;
     }
 }
