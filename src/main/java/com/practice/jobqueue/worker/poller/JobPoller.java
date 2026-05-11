@@ -2,6 +2,7 @@ package com.practice.jobqueue.worker.poller;
 
 import com.practice.jobqueue.domain.Job;
 import com.practice.jobqueue.service.JobService;
+import com.practice.jobqueue.worker.queue.JobQueueManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -13,17 +14,17 @@ import java.util.List;
 public class JobPoller {
 
     private final JobService jobService;
+    private final JobQueueManager jobQueueManager;
 
-    private static final int DEFAULT_POLL_LIMIT = 10;
+    private int limit = 10;
 
 
     @Scheduled(fixedDelayString = "${job.poller.fixed-delay:5000}")
     public void poll() {
-        pollDueJobs();
-    }
-
-    public List<Job> pollDueJobs() {
-        return pollDueJobs(DEFAULT_POLL_LIMIT);
+        limit = jobQueueManager.remainingCapacity();
+        if (limit == 0) return;  // queue is full, skip this cycle
+        List<Job> jobs = pollDueJobs(limit);
+        jobs.forEach(jobQueueManager::enqueue);
     }
 
     public List<Job> pollDueJobs(int limit) {
