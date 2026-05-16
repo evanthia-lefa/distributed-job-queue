@@ -104,4 +104,10 @@ public class JobService {
 
         return jobs;
     }
+
+
+    @Transactional
+    public void releaseJob(Job job){
+        jobRepository.resetToPending(job.getId());
+    }
 }

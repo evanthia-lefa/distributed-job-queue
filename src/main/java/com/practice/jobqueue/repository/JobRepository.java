@@ -58,5 +58,13 @@ public interface JobRepository extends JpaRepository<Job, Long> {
             @Param("runningStatus") JobStatus runningStatus,
             @Param("now") OffsetDateTime now);
 
+    @Modifying
+    @Query("""
+            UPDATE Job j
+            SET j.status = JobStatus.PENDING
+            WHERE j.id = :id
+            """)
+    void resetToPending(Long id);
+
 
 }

@@ -16,15 +16,17 @@ public class JobPoller {
     private final JobService jobService;
     private final JobQueueManager jobQueueManager;
 
-    private int limit = 10;
-
-
     @Scheduled(fixedDelayString = "${job.poller.fixed-delay:5000}")
     public void poll() {
-        limit = jobQueueManager.remainingCapacity();
+        int limit = jobQueueManager.remainingCapacity();
         if (limit == 0) return;  // queue is full, skip this cycle
         List<Job> jobs = pollDueJobs(limit);
-        jobs.forEach(jobQueueManager::enqueue);
+        jobs.forEach(job -> {
+            boolean isEnqueued = jobQueueManager.enqueue(job);
+            if (!isEnqueued) {
+                jobService.releaseJob(job); // reset to PENDING
+            }
+        });
     }
 
     public List<Job> pollDueJobs(int limit) {
