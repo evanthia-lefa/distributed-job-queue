@@ -207,4 +207,19 @@ class JobServiceTest {
 
         assertSame(expectedResponses, actualResponses);
     }
+
+    @Test
+    void releaseJobShouldResetToPending() {
+        long jobId = 1L;
+
+        Job existingJob = new Job();
+        existingJob.setId(jobId);
+        existingJob.setStatus(JobStatus.RUNNING);
+
+        doNothing().when(jobRepository).resetToPending(jobId);
+
+        jobService.releaseJob(existingJob);
+
+        verify(jobRepository).resetToPending(jobId);
+    }
 }
