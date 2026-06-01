@@ -9,12 +9,14 @@ import com.practice.jobqueue.repository.JobRepository;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
 import java.time.OffsetDateTime;
 import java.util.List;
 
+@Slf4j
 @RequiredArgsConstructor
 @Service
 public class JobService {
@@ -23,14 +25,16 @@ public class JobService {
     private final JobMapper jobMapper;
 
     public JobResponse createJob(JobRequest jobRequest) {
+        log.debug("Creating job of type '{}' with priority={}", jobRequest.getType(), jobRequest.getPriority());
         Job job = jobMapper.toJob(jobRequest);
         job.setRunAt(resolveRunAt(jobRequest.getRunAt()));
         Job savedJob = jobRepository.save(job);
-
+        log.info("Job created: id={}, type='{}', runAt={}", savedJob.getId(), savedJob.getType(), savedJob.getRunAt());
         return jobMapper.toJobResponse(savedJob);
     }
 
     public JobResponse updateJob(Long id, JobRequest jobRequest) {
+        log.debug("Updating job id={}", id);
         Job job = getExistingJob(id);
         job.setType(jobRequest.getType());
         job.setPayload(jobRequest.getPayload());
@@ -39,6 +43,7 @@ public class JobService {
         job.setUpdatedAt(OffsetDateTime.now());
 
         Job savedJob = jobRepository.save(job);
+        log.info("Job updated: id={}, type='{}', status={}", savedJob.getId(), savedJob.getType(), savedJob.getStatus());
         return jobMapper.toJobResponse(savedJob);
     }
 
@@ -48,6 +53,7 @@ public class JobService {
     }
 
     public JobResponse cancelJob(Long id) {
+        log.info("Cancelling job id={}", id);
         Job job = getExistingJob(id);
         OffsetDateTime now = OffsetDateTime.now();
 
@@ -57,6 +63,7 @@ public class JobService {
         job.setUpdatedAt(now);
 
         Job savedJob = jobRepository.save(job);
+        log.info("Job id={} marked as FAILED (cancelled by user)", id);
         return jobMapper.toJobResponse(savedJob);
     }
 
@@ -73,7 +80,10 @@ public class JobService {
 
     private Job getExistingJob(Long id) {
         return jobRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Job not found with id: " + id));
+                .orElseThrow(() -> {
+                    log.warn("Job not found with id={}", id);
+                    return new EntityNotFoundException("Job not found with id: " + id);
+                });
     }
 
     private OffsetDateTime resolveRunAt(OffsetDateTime runAt) {
@@ -86,6 +96,7 @@ public class JobService {
 
     @Transactional
     public List<Job> claimJobs(int batchSize) {
+        log.debug("Claiming up to {} due jobs", batchSize);
         OffsetDateTime now = OffsetDateTime.now();
 
         List<Job> jobs = jobRepository.findDueJobsForUpdate(
@@ -94,18 +105,25 @@ public class JobService {
                 PageRequest.of(0, batchSize)
         );
 
+        if (jobs.isEmpty()) {
+            log.debug("No due jobs found");
+            return jobs;
+        }
+
         List<Long> ids = jobs.stream()
                 .map(Job::getId)
                 .toList();
 
         jobRepository.markJobsAsRunning(ids, JobStatus.RUNNING, now);
+        log.info("Claimed {} jobs: ids={}", jobs.size(), ids);
 
         return jobs;
     }
 
 
     @Transactional
-    public void releaseJob(Job job){
+    public void releaseJob(Job job) {
+        log.warn("Releasing job id={} back to PENDING (queue was full)", job.getId());
         jobRepository.resetToPending(job.getId());
     }
 }

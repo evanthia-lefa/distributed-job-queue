@@ -1,0 +1,24 @@
+<Configuration status="warn" name="job-queue" packages="">
+
+    <Appenders>
+        <Console name="stdout" target="SYSTEM_OUT">
+            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss} %p %m%n"/>
+        </Console>
+
+        <!--
+        <File name="fileLog" fileName="logs/job-queue.log">
+            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss} %p %m%n"/>
+        </File>
+        -->
+    </Appenders>
+
+    <Loggers>
+        <Root level="info">
+            <AppenderRef ref="stdout"/>
+            <!--
+            <AppenderRef ref="fileLog"/>
+            -->
+        </Root>
+    </Loggers>
+
+</Configuration>

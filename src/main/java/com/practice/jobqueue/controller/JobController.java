@@ -7,6 +7,7 @@ import com.practice.jobqueue.service.JobService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -16,6 +17,7 @@ import java.util.List;
 /**
  * Exposes REST endpoints for creating, updating, querying.
  */
+@Slf4j
 @RestController
 @RequestMapping("/v1/jobs")
 @RequiredArgsConstructor
@@ -31,7 +33,9 @@ public class JobController {
      */
     @PostMapping
     public ResponseEntity<JobResponse> createJob(@RequestBody @Valid JobRequest request) {
+        log.info("REST POST /v1/jobs - creating job of type '{}'", request.getType());
         JobResponse response = jobService.createJob(request);
+        log.info("Job created successfully with id={}", response.getId());
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
@@ -46,7 +50,10 @@ public class JobController {
     public ResponseEntity<JobResponse> updateJob(
             @PathVariable @Positive(message = "id must be positive") Long id,
             @RequestBody @Valid JobRequest request) {
-        return ResponseEntity.ok(jobService.updateJob(id, request));
+        log.info("REST PUT /v1/jobs/{} - updating job", id);
+        JobResponse response = jobService.updateJob(id, request);
+        log.info("Job id={} updated successfully", id);
+        return ResponseEntity.ok(response);
     }
 
     /**
@@ -58,6 +65,7 @@ public class JobController {
     @GetMapping("/{id}")
     public ResponseEntity<JobResponse> getJobById(
             @PathVariable @Positive(message = "id must be positive") Long id) {
+        log.debug("REST GET /v1/jobs/{} - fetching job", id);
         return ResponseEntity.ok(jobService.getJobById(id));
     }
 
@@ -70,7 +78,10 @@ public class JobController {
     @PostMapping("/{id}/cancel")
     public ResponseEntity<JobResponse> cancelJob(
             @PathVariable @Positive(message = "id must be positive") Long id) {
-        return ResponseEntity.ok(jobService.cancelJob(id));
+        log.info("REST POST /v1/jobs/{}/cancel - cancelling job", id);
+        JobResponse response = jobService.cancelJob(id);
+        log.info("Job id={} cancelled successfully", id);
+        return ResponseEntity.ok(response);
     }
 
     /**
@@ -84,6 +95,7 @@ public class JobController {
     public ResponseEntity<List<JobResponse>> getJobs(
             @RequestParam JobStatus status,
             @RequestParam(required = false) String type) {
+        log.debug("REST GET /v1/jobs - querying jobs with status='{}', type='{}'", status, type);
         if (type == null || type.isBlank()) {
             return ResponseEntity.ok(jobService.getJobsByStatus(status));
         }
