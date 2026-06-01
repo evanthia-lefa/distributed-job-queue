@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.OffsetDateTime;
 
@@ -21,12 +23,13 @@ public class Job {
     @Column(nullable = false, length = 100)
     private String type;
 
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(nullable = false, columnDefinition = "jsonb")
     private String payload;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
-    private JobStatus status;
+    private JobStatus status = JobStatus.PENDING;
 
     @Column(nullable = false)
     private Integer priority = 0;
@@ -43,7 +46,7 @@ public class Job {
     @Column(name = "last_error")
     private String lastError;
 
-    @Column(name = "created_at", nullable = false)
+    @Column(name = "created_at", nullable = false, updatable = false)
     private OffsetDateTime createdAt;
 
     @Column(name = "updated_at", nullable = false)
@@ -54,4 +57,15 @@ public class Job {
 
     @Column(name = "finished_at")
     private OffsetDateTime finishedAt;
+
+    @PrePersist
+    void prePersist() {
+        createdAt = OffsetDateTime.now();
+        updatedAt = OffsetDateTime.now();
+    }
+
+    @PreUpdate
+    void preUpdate() {
+        updatedAt = OffsetDateTime.now();
+    }
 }
