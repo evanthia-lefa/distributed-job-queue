@@ -24,8 +24,6 @@ public class JobService {
 
     public JobResponse createJob(JobRequest jobRequest) {
         Job job = jobMapper.toJob(jobRequest);
-        job.setStatus(JobStatus.PENDING);
-        job.setAttemptCount(0);
         job.setRunAt(resolveRunAt(jobRequest.getRunAt()));
         Job savedJob = jobRepository.save(job);
 
