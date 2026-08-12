@@ -126,4 +126,9 @@ public class JobService {
         log.warn("Releasing job id={} back to PENDING (queue was full)", job.getId());
         jobRepository.resetToPending(job.getId());
     }
+
+    @Transactional
+    public void markJobSucceeded(Job job){
+        jobRepository.markJobSucceeded(job.getId());
+    }
 }

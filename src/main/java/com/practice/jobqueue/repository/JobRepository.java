@@ -66,5 +66,12 @@ public interface JobRepository extends JpaRepository<Job, Long> {
             """)
     void resetToPending(Long id);
 
+    @Modifying
+    @Query("""
+            UPDATE Job j
+            SET j.status = JobStatus.SUCCEEDED
+            WHERE j.id = :id
+            """)
+    void markJobSucceeded(Long id);
 
 }
